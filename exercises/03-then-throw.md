@@ -12,26 +12,31 @@ Look at `PaymentService`: `charge` returns a transaction id, `refund` is `void`.
 `PaymentFailedException` if something goes wrong.
 
 **3.1** Test: `bookTickets_throwsExceptionAndSendsNoMail_whenPaymentFails`  
-Given: The screening repository returns `DUNE` for id `1`, the price for 2 seats is `36.0` and
-`charge("anna@example.com", 36.0)` throws `new PaymentFailedException("Card declined")`.  
-When: 2 seats are booked for `"anna@example.com"`.  
+Given: `screeningRepository.findById(1L)` returns `DUNE`, `priceCalculator.calculateTotal(DUNE, 2)`
+returns `36.0` and `paymentService.charge("anna@example.com", 36.0)` throws
+`new PaymentFailedException("Card declined")`.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 2)` is called.  
 Then:
-- `bookTickets` throws the exception (check the message too)
-- no confirmation e-mail was sent
+- a `PaymentFailedException` with the message `"Card declined"` is thrown
+- `notificationService` had no interactions
 
 **3.2** Test: `bookTickets_secondAttemptSucceeds_afterFirstPaymentFailed`  
-Given: Same screening and price as in 3.1. The first `charge` throws a `PaymentFailedException("Timeout")`,
-the second returns `"TX-2"`.  
-When: `bookTickets` is called twice.  
-Then: The first call fails, the second returns a booking with transaction id `"TX-2"`.
+Given: `screeningRepository.findById(1L)` returns `DUNE`, `priceCalculator.calculateTotal(DUNE, 2)`
+returns `36.0`. `paymentService.charge("anna@example.com", 36.0)` throws
+`new PaymentFailedException("Timeout")` on the first call and returns `"TX-2"` on the second call.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 2)` is called twice.  
+Then: The first call throws a `PaymentFailedException`, the second returns a booking with
+`getPaymentTransactionId()` equal to `"TX-2"`.
 
 **3.3** Test: `cancelBooking_keepsBookingConfirmed_whenRefundFails`  
-Given: The booking repository returns `new Booking("b1", 1, "anna@example.com", 2, 36.0, "TX-1")` for
-`"b1"`, and `refund("TX-1", 36.0)` throws a `PaymentFailedException`.  
-When: `cancelBooking("b1")` is called.  
+Given: `bookingRepository.findById("b1")` returns
+`new Booking("b1", 1, "anna@example.com", 2, 36.0, "TX-1")`, and `paymentService.refund("TX-1", 36.0)`
+throws `new PaymentFailedException("Refund rejected")`.  
+When: `bookingService.cancelBooking("b1")` is called.  
 Then: A `PaymentFailedException` is thrown and:
-- the booking is still `CONFIRMED`
-- the booking was not saved and no e-mail was sent
+- `booking.getStatus()` is still `CONFIRMED`
+- `bookingRepository.save(booking)` was never called
+- `notificationService` had no interactions
 
 Hint: `refund` is `void`, so `when(...)` doesn't compile. Use `doThrow(...).when(mock).method(...)`.
 

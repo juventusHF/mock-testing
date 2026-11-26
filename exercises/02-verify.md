@@ -13,32 +13,34 @@ All tasks test `BookingService`. The setup (mocks and `@InjectMocks`) is already
 **2.1** Test: `bookTickets_chargesSavesAndSendsConfirmation`  
 Given: `screeningRepository.findById(1L)` returns `DUNE` and `priceCalculator.calculateTotal(DUNE, 2)`
 returns `36.0`.  
-When: 2 seats are booked for `"anna@example.com"`.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 2)` is called.  
 Then: Verify that:
-- the customer was charged `36.0`
-- the returned booking was saved
-- a confirmation was sent for it
+- `paymentService.charge("anna@example.com", 36.0)` was called
+- `bookingRepository.save(...)` was called with the returned booking
+- `notificationService.sendBookingConfirmation(...)` was called with the returned booking
 
 Hint: `Booking` has no `equals()`, so `verify` only matches the exact object returned by `bookTickets`.
 
 **2.2** Test: `bookTickets_doesNothing_whenNumberOfSeatsIsInvalid`  
 Given: Nothing. Why do you not need any `when(...)` in this test?  
-When: `0` seats are booked.  
-Then: An `IllegalArgumentException` is thrown and **none** of the dependencies was used.
+When: `bookingService.bookTickets(1L, "anna@example.com", 0)` is called.  
+Then: An `IllegalArgumentException` is thrown, and `screeningRepository`, `bookingRepository`,
+`paymentService` and `notificationService` had no interactions (`verifyNoInteractions`).
 
 **2.3** Test: `bookTickets_loadsScreeningOncePerBooking`  
-Given: The screening repository returns `DUNE` for id `1`.  
-When: Two bookings are made for screening `1`.  
-Then: Verify that the screening was loaded exactly **2** times.
+Given: `screeningRepository.findById(1L)` returns `DUNE`.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 2)` and
+`bookingService.bookTickets(1L, "ben@example.com", 3)` are called.  
+Then: Verify that `screeningRepository.findById(1L)` was called exactly **2** times.
 
 **2.4** Test: `cancelBooking_doesNothing_whenBookingIsAlreadyCancelled`  
-Given: The booking repository returns a cancelled booking for `"b1"`
+Given: `bookingRepository.findById("b1")` returns a cancelled booking
 (`new Booking("b1", 1, "anna@example.com", 2, 36.0, "TX-1")`, then `booking.cancel()`).  
-When: `cancelBooking("b1")` is called.  
+When: `bookingService.cancelBooking("b1")` is called.  
 Then: An `IllegalStateException` is thrown and:
-- no refund was made (`never()`)
-- the booking was not saved
-- no e-mail was sent
+- `paymentService.refund("TX-1", 36.0)` was never called (`never()`)
+- `bookingRepository.save(booking)` was never called
+- `notificationService` had no interactions
 
 ## Reflection
 

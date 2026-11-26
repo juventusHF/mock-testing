@@ -16,25 +16,33 @@ In this test class, `priceCalculator` is a **spy**, so the real prices are calcu
 ## Tasks
 
 **6.1** Test: `bookTickets_savesBookingWithCorrectData`  
-Given: The screening repository returns `DUNE_EVENING` for id `2`, and `charge("anna@example.com", 42.0)`
-returns `"TX-1"`.  
-When: 2 seats are booked for `"anna@example.com"`.  
-Then: Capture the saved booking and check **all** fields: id is not `null`, screening id, e-mail,
-seats, total price, transaction id and status.
+Given: `screeningRepository.findById(2L)` returns `DUNE_EVENING`, and
+`paymentService.charge("anna@example.com", 42.0)` returns `"TX-1"`.  
+When: `bookingService.bookTickets(2L, "anna@example.com", 2)` is called.  
+Then: Capture the booking passed to `bookingRepository.save(...)` and check **all** fields:
+- `getId()` is not `null`
+- `getScreeningId()` is `2`
+- `getCustomerEmail()` is `"anna@example.com"`
+- `getSeats()` is `2`
+- `getTotalPrice()` is `42.0`
+- `getPaymentTransactionId()` is `"TX-1"`
+- `getStatus()` is `CONFIRMED`
 
 **6.2** Test: `bookTickets_chargesGroupPriceForEveningScreening`  
-Given: The screening repository returns `DUNE_EVENING` for id `2`.  
-When: 5 seats are booked for `"group@example.com"`.  
-Then: Capture **both** arguments of `charge` (e-mail and amount) and check them. What is the correct
-group price?
+Given: `screeningRepository.findById(2L)` returns `DUNE_EVENING`.  
+When: `bookingService.bookTickets(2L, "group@example.com", 5)` is called.  
+Then: Capture **both** arguments of `paymentService.charge(...)` and check that the e-mail is
+`"group@example.com"` and the amount is the correct group price. What is the correct group price?
 
 **6.3** Test: `bookTickets_createsUniqueBookingIds`  
-Given: The screening repository returns `DUNE_EVENING` for id `2`.  
-When: Two bookings are made (`"anna@example.com"` 1 seat, `"ben@example.com"` 3 seats).  
-Then: Capture **all** saved bookings (`times(2)` + `getAllValues()`) and check:
+Given: `screeningRepository.findById(2L)` returns `DUNE_EVENING`.  
+When: `bookingService.bookTickets(2L, "anna@example.com", 1)` and
+`bookingService.bookTickets(2L, "ben@example.com", 3)` are called.  
+Then: Capture **all** bookings passed to `bookingRepository.save(...)` (`times(2)` + `getAllValues()`)
+and check:
 - there are 2
-- the e-mails are in the right order
-- the two ids are different
+- the first has `getCustomerEmail()` `"anna@example.com"`, the second `"ben@example.com"`
+- the two `getId()` values are different
 
 ## Reflection
 

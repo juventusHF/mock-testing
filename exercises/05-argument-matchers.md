@@ -10,27 +10,30 @@ You can stub and verify calls without knowing the exact argument values.
 
 **5.1** Test: `bookTickets_usesTransactionIdFromPaymentService`  
 Given: Use matchers for all stubs:
-- any screening id → `DUNE`
-- `calculateTotal` for any screening and any number of seats → `50.0`
-- `charge` for any e-mail and any amount → `"TX-42"`
+- `screeningRepository.findById(...)` returns `DUNE` for any id (`anyLong()`)
+- `priceCalculator.calculateTotal(...)` returns `50.0` for any screening and any number of seats
+- `paymentService.charge(...)` returns `"TX-42"` for any e-mail and any amount
 
-When: 3 seats are booked.  
-Then: The booking has transaction id `"TX-42"`, and a confirmation was sent for **any** `Booking`.
+When: `bookingService.bookTickets(1L, "anna@example.com", 3)` is called.  
+Then:
+- the returned booking's `getPaymentTransactionId()` is `"TX-42"`
+- `notificationService.sendBookingConfirmation(...)` was called with **any** `Booking`
 
 **5.2** Test: `bookTickets_chargesTheCustomer_matchersMustBeUsedForAllArguments`  
-Given: Any screening id returns `DUNE`.  
-When: 2 seats are booked for `"anna@example.com"`.  
-Then: Verify the `charge` call with:
-1. the exact e-mail and **any** amount. First try it without `eq(...)` and read the error message.
-2. **any** e-mail that ends with `@example.com` and any amount
+Given: `screeningRepository.findById(...)` returns `DUNE` for any id.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 2)` is called.  
+Then: Verify `paymentService.charge(...)` twice:
+1. with exactly `"anna@example.com"` and **any** amount. First try it without `eq(...)` and read the
+   error message.
+2. with **any** e-mail that ends with `@example.com` and any amount
 
 Hint: if you use a matcher for one argument, you must use matchers for **all** arguments.
 
 **5.3** Test: `bookTickets_savesConfirmedBookingWithRequestedSeats`  
-Given: Any screening id returns `DUNE`.  
-When: 3 seats are booked.  
-Then: Use `argThat` to verify that `save` was called with a booking that has 3 seats **and** is
-confirmed.
+Given: `screeningRepository.findById(...)` returns `DUNE` for any id.  
+When: `bookingService.bookTickets(1L, "anna@example.com", 3)` is called.  
+Then: Use `argThat` to verify that `bookingRepository.save(...)` was called with a booking that has
+3 seats **and** is confirmed.
 
 ## Reflection
 

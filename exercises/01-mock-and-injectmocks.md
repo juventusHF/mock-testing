@@ -20,25 +20,25 @@ what a mock returns.
 ### Tests
 
 **1.4** Test: `getScreening_returnsScreeningFromRepository`  
-Given: The repository returns `DUNE_AFTERNOON` for id `1`.  
-When: `getScreening(1)` is called.  
-Then: It returns exactly this screening.
+Given: `screeningRepository.findById(1L)` returns `DUNE_AFTERNOON`.  
+When: `screeningService.getScreening(1L)` is called.  
+Then: The result is exactly `DUNE_AFTERNOON`.
 
 **1.5** Test: `getScreening_throwsException_whenScreeningDoesNotExist`  
-Given: The repository finds nothing for id `99` (what does `findById` return then?).  
-When: `getScreening(99)` is called.  
+Given: `screeningRepository.findById(99L)` finds nothing (what does `findById` return then?).  
+When: `screeningService.getScreening(99L)` is called.  
 Then: A `ScreeningNotFoundException` is thrown. Use `assertThrows`.
 
 **1.6** Test: `findByTitle_returnsOnlyMatchingScreenings_ignoringCase`  
-Given: The repository contains `DUNE_AFTERNOON`, `INSIDE_OUT` and `DUNE_EVENING`.  
-When: `findByTitle("dune")` is called (lower case!).  
-Then: It returns the two Dune screenings.
+Given: `screeningRepository.findAll()` returns `DUNE_AFTERNOON`, `INSIDE_OUT` and `DUNE_EVENING`.  
+When: `screeningService.findByTitle("dune")` is called (lower case!).  
+Then: The result contains exactly `DUNE_AFTERNOON` and `DUNE_EVENING`.
 
 **1.7** Test: `getAvailableSeats_subtractsConfirmedBookings`  
-Given: The screening repository returns `DUNE_AFTERNOON` (80 seats) for id `1`, and the booking repository
-returns two bookings with 3 and 4 seats for this screening.  
-When: `getAvailableSeats(1)` is called.  
-Then: It returns `73`.  
+Given: `screeningRepository.findById(1L)` returns `DUNE_AFTERNOON` (80 seats), and
+`bookingRepository.findByScreeningId(1L)` returns two confirmed bookings with 3 and 4 seats.  
+When: `bookingService.getAvailableSeats(1L)` is called.  
+Then: The result is `73`.  
 Hint: `new Booking("b1", 1, "anna@example.com", 3, 54.0, "TX-1")` creates a confirmed booking.
 
 ## Reflection
